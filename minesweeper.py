@@ -1,6 +1,5 @@
 import itertools
 import random
-from shutil import move
 
 
 class Minesweeper():

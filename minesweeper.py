@@ -181,6 +181,7 @@ class MinesweeperAI():
         for sentence in self.knowledge:
             sentence.mark_safe(cell)
 
+
     def add_knowledge(self, cell, count):
         """
         Called when the Minesweeper board tells us, for a given
@@ -196,9 +197,70 @@ class MinesweeperAI():
             5) add any new sentences to the AI's knowledge base
                if they can be inferred from existing knowledge
         """
+        self.moves_made.add(cell)
+        self.mark_safe(cell)
+
+        adj = []
+
+        for i in range(cell[0]-1,cell[0]+2):
+            for j in range(cell[1]-1,cell[1]+2):
+                if (i >= 0 and i < self.height) and (j >= 0 and j < self.width)  and (i, j) != cell and (i, j) not in self.safes and (i, j) not in self.mines:
+                    adj.append((i,j))
+                if (i,j) in self.mines:
+                    count -= 1
+        
+        sentence = Sentence(adj,count)
+        self.knowledge.append(sentence)
+
+
+        temp = list()
+        for s in self.knowledge:
+             if s.known_mines():
+                for mine in s.known_mines().copy():
+                    self.mark_mine(mine)
+             elif s.known_safes():
+                for safe in s.known_safes().copy():
+                    self.mark_safe(safe)
+             else:
+                temp.append(s)
+
+        self.knowledge = temp
+
+
+        newSentences = []
+
+        for s in self.knowledge:
+            if sentence.cells.issubset(s.cells):
+                newCells = s.cells.difference(sentence.cells)
+                newCount = s.count - sentence.count
+                if s.count == sentence.count:
+                    for c in newCells:
+                        self.mark_safe(c)
+                elif len(newCells) == newCount:
+                    for c in newCells:
+                        self.mark_mine(c)
+                else:
+                    newSen = Sentence(newCells,newCount)
+                    newSentences.append(newSen)
+            
+            elif sentence.cells.issuperset(s.cells):
+                newCells = sentence.cells.difference(s.cells)
+                newCount = sentence.count - s.count
+                if s.count == sentence.count:
+                    for c in newCells:
+                        self.mark_safe(c)
+                elif len(newCells) == newCount:
+                    for c in newCells:
+                        self.mark_mine(c)
+                else:
+                    newSen = Sentence(newCells,newCount)
+                    newSentences.append(newSen)
+
+        self.knowledge.extend(newSentences)
+        self.remove_dup()
         
 
-
+        
     def make_safe_move(self):
         """
         Returns a safe cell to choose on the Minesweeper board.
@@ -232,4 +294,11 @@ class MinesweeperAI():
         return move
 
                     
+    def remove_dup(self):
+        """Removes duplicate sentences from the knoledge base"""
+        knowledge = []
 
+        for s in self.knowledge:
+            if s not in knowledge:
+                knowledge.append(s)
+        self.knowledge = knowledge

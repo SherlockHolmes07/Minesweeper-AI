@@ -1,5 +1,6 @@
 import itertools
 import random
+from shutil import move
 
 
 class Minesweeper():
@@ -195,83 +196,6 @@ class MinesweeperAI():
             5) add any new sentences to the AI's knowledge base
                if they can be inferred from existing knowledge
         """
-        #marking as move made
-        self.moves_made.add(cell)
-        #cell as safe
-        self.mark_safe(cell)
-
-        unknown_cells = []
-
-        # Loop over all cells within one row and column
-        for i in range(cell[0] - 1, cell[0] + 2):
-            for j in range(cell[1] - 1, cell[1] + 2):
-                # Ignore the cell itself
-                if (i, j) == cell:
-                    continue
-                if (i,j) in self.mines:
-                    count -= 1
-                elif (i,j) in self.safes:
-                    continue
-                else:
-                    unknown_cells.append((i,j))
-
-        #Adding new Knowledge
-        newKn = Sentence(unknown_cells,count)
-        self.knowledge.append(newKn)
-
-        extrakn = list()
-
-        for sentence in self.knowledge:
-            if newKn.cells.issubset(sentence.cells):
-
-                newCells = sentence.cells.difference(newKn.cells)
-                newCount = sentence.count - newKn.count
-                newS = Sentence(newCells,newCount)    
-                self.knowledge.append(newS)
-                extrakn.append(newS)
-
-            elif sentence.cells.issubset(newKn.cells):
-
-                newCells = newKn.cells.difference(sentence.cells)
-                newCount = newKn.count - sentence.count
-                newS = Sentence(newCells,newCount)
-                self.knowledge.append(newS)
-                extrakn.append(newS)
-            
-            if len(sentence.cells) == sentence.count:
-                  for c in sentence.cells.copy():
-                      self.mark_mine(c)
-            elif sentence.count == 0:
-                  for c in sentence.cells.copy():
-                      self.mark_safe(c)
-
-
-        #for new added knowledge
-        for kn in extrakn:
-            for sentence in self.knowledge:
-
-              if kn.cells.issubset(sentence.cells):
-
-                  newCells = sentence.cells.difference(kn.cells)
-                  newCount = sentence.count - kn.count
-                  newS = Sentence(newCells,newCount)    
-                  self.knowledge.append(newS)
-                  extrakn.append(newS)
-
-              elif sentence.cells.issubset(kn.cells):
-
-                  newCells = kn.cells.difference(sentence.cells)
-                  newCount = kn.count - sentence.count
-                  newS = Sentence(newCells,newCount)
-                  self.knowledge.append(newS)
-                  extrakn.append(newS)
-            
-              if len(sentence.cells) == sentence.count:
-                  for c in sentence.cells.copy():
-                      self.mark_mine(c)
-              elif sentence.count == 0:
-                  for c in sentence.cells.copy():
-                      self.mark_safe(c)
         
 
 
@@ -285,9 +209,10 @@ class MinesweeperAI():
         and self.moves_made, but should not modify any of those values.
         """
         s =  self.safes.difference(self.moves_made)
-        for cell in s:
-            return cell
-
+        if not s:
+            return None
+        cell = s.pop()
+        return cell
 
     def make_random_move(self):
         """
@@ -296,10 +221,15 @@ class MinesweeperAI():
             1) have not already been chosen, and
             2) are not known to be mines
         """
-        
+        moves = set()
         for i in range(self.height):
             for j in range(self.width):
                 if (i,j) not in self.moves_made and (i,j) not in self.mines:
-                    return (i,j)
+                    moves.add((i,j))
+        if len(moves) == 0:
+            return None
+        move = random.choice(tuple(moves))
+        return move
+
                     
 
